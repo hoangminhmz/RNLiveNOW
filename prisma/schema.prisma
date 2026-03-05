@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Room {
+  id        String    @id @default(uuid())
+  name      String
+  patients  Patient[]
+  createdAt DateTime  @default(now())
+}
+
+model Patient {
+  id                  String    @id @default(uuid())
+  name                String
+  phone               String?
+  service             String?
+  appointmentTime     DateTime
+  status              String    @default("scheduled") // scheduled, waiting, in_room, done, cancelled, no_show
+  checkinTime         DateTime?
+  treatmentStartTime  DateTime?
+  treatmentEndTime    DateTime?
+  room                Room?     @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  roomId              String?
+  note                String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  logs                PatientLog[]
+}
+
+model PatientLog {
+  id        String   @id @default(uuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  action    String   // e.g., "status_change", "room_move", "note_update", "created"
+  details   String?  // e.g., "Moved to Room 1", "Status changed to waiting"
+  createdAt DateTime @default(now())
+}
