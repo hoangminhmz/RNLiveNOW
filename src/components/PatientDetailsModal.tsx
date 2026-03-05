@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Phone, Clock, FileText, Activity, ArrowRight, Sparkles, RefreshCw } from 'lucide-react';
+import { X, User, Phone, Clock, FileText, Activity, ArrowRight, UserX, CalendarX } from 'lucide-react';
 import { Patient, Room } from '../types';
-import { generatePatientSummary } from '../services/geminiService';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 
@@ -18,29 +17,13 @@ interface PatientDetailsModalProps {
 export function PatientDetailsModal({ patient, isOpen, onClose, rooms, onUpdate }: PatientDetailsModalProps) {
   const [note, setNote] = useState('');
   const [selectedRoomId, setSelectedRoomId] = useState('');
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   useEffect(() => {
     if (patient) {
       setNote(patient.note || '');
       setSelectedRoomId(patient.roomId || '');
-      setAiSummary(null);
     }
   }, [patient]);
-
-  const handleGenerateSummary = async () => {
-    if (!patient) return;
-    setIsGeneratingSummary(true);
-    try {
-      const summary = await generatePatientSummary(patient);
-      setAiSummary(summary || 'No summary generated.');
-    } catch (error) {
-      console.error('Failed to generate summary:', error);
-    } finally {
-      setIsGeneratingSummary(false);
-    }
-  };
 
   if (!isOpen || !patient) return null;
 
@@ -139,48 +122,34 @@ export function PatientDetailsModal({ patient, isOpen, onClose, rooms, onUpdate 
                   <p className="text-xs text-amber-600">No empty rooms available</p>
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* AI Summary */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                AI Patient Insight
-              </h3>
-              <button 
-                onClick={handleGenerateSummary}
-                disabled={isGeneratingSummary}
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 disabled:opacity-50"
-              >
-                {isGeneratingSummary ? <RefreshCw className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                {aiSummary ? 'Regenerate' : 'Generate Summary'}
-              </button>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-4 border border-indigo-100 min-h-[80px] relative overflow-hidden">
-              {isGeneratingSummary ? (
-                <div className="flex items-center justify-center h-full py-4">
-                  <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              ) : aiSummary ? (
-                <p className="text-sm text-slate-700 leading-relaxed font-serif italic">
-                  {aiSummary}
-                </p>
-              ) : (
-                <p className="text-sm text-slate-400 text-center py-4">
-                  Click generate to get an AI-powered summary of this patient's history.
-                </p>
-              )}
-              <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
-                <Sparkles className="w-12 h-12 text-indigo-600" />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    onUpdate(patient.id, { status: 'no_show' });
+                    onClose();
+                  }}
+                  disabled={patient.status === 'done'}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-semibold hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <UserX className="w-4 h-4" />
+                  No Show
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdate(patient.id, { status: 'cancelled' });
+                    onClose();
+                  }}
+                  disabled={patient.status === 'done'}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-sm font-semibold hover:bg-rose-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CalendarX className="w-4 h-4" />
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
+
 
           {/* Notes */}
           <div className="space-y-4">

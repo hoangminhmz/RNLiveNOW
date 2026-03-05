@@ -1,21 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import dayjs from 'dayjs';
 import { Patient, Room } from '../types';
-import { Calendar, TrendingUp, Users, Clock, Settings, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { ClinicReportModal } from './ClinicReportModal';
+import { Calendar, TrendingUp, Users, Clock, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DashboardProps {
   patients: Patient[];
   rooms: Room[];
   onOpenSettings: () => void;
   onDateSelect: (date: Date) => void;
+  initialViewMode?: 'overview' | 'calendar';
 }
 
-export function Dashboard({ patients, rooms, onOpenSettings, onDateSelect }: DashboardProps) {
+export function Dashboard({ patients, rooms, onOpenSettings, onDateSelect, initialViewMode = 'overview' }: DashboardProps) {
   const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [viewMode, setViewMode] = useState<'overview' | 'calendar'>('overview');
-  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'overview' | 'calendar'>(initialViewMode);
+
+  useEffect(() => {
+    setViewMode(initialViewMode);
+  }, [initialViewMode]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -69,7 +72,8 @@ export function Dashboard({ patients, rooms, onOpenSettings, onDateSelect }: Das
     return {
       total: dayPatients.length,
       done: dayPatients.filter(p => p.status === 'done').length,
-      cancelled: dayPatients.filter(p => p.status === 'cancelled').length
+      cancelled: dayPatients.filter(p => p.status === 'cancelled').length,
+      no_show: dayPatients.filter(p => p.status === 'no_show').length
     };
   };
 
@@ -98,13 +102,6 @@ export function Dashboard({ patients, rooms, onOpenSettings, onDateSelect }: Das
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => setIsReportOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg hover:shadow-lg hover:shadow-indigo-500/20 font-bold text-sm transition-all active:scale-95"
-          >
-            <Sparkles className="w-4 h-4" />
-            AI Performance Report
-          </button>
-          <button
             onClick={onOpenSettings}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-medium transition-colors shadow-sm"
           >
@@ -113,13 +110,6 @@ export function Dashboard({ patients, rooms, onOpenSettings, onDateSelect }: Das
           </button>
         </div>
       </div>
-
-      <ClinicReportModal 
-        isOpen={isReportOpen} 
-        onClose={() => setIsReportOpen(false)} 
-        patients={patients} 
-        rooms={rooms} 
-      />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {viewMode === 'overview' ? (
@@ -246,15 +236,28 @@ export function Dashboard({ patients, rooms, onOpenSettings, onDateSelect }: Das
                     </div>
                     {dayStats.total > 0 && (
                       <div className="flex-1 flex flex-col gap-1 mt-1">
-                        <div className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium">
-                          {dayStats.total} Patients
+                        <div className="text-[10px] px-1 py-0.5 bg-indigo-50 text-indigo-700 rounded font-bold flex justify-between">
+                          <span>Total:</span>
+                          <span>{dayStats.total}</span>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-1 gap-0.5">
                           {dayStats.done > 0 && (
-                            <div className="h-1.5 flex-1 bg-emerald-500 rounded-full" title={`${dayStats.done} Done`} />
+                            <div className="text-[9px] px-1 bg-emerald-50 text-emerald-700 rounded flex justify-between">
+                              <span>Done:</span>
+                              <span>{dayStats.done}</span>
+                            </div>
+                          )}
+                          {dayStats.no_show > 0 && (
+                            <div className="text-[9px] px-1 bg-amber-50 text-amber-700 rounded flex justify-between">
+                              <span>No Show:</span>
+                              <span>{dayStats.no_show}</span>
+                            </div>
                           )}
                           {dayStats.cancelled > 0 && (
-                            <div className="h-1.5 flex-1 bg-red-400 rounded-full" title={`${dayStats.cancelled} Cancelled`} />
+                            <div className="text-[9px] px-1 bg-rose-50 text-rose-700 rounded flex justify-between">
+                              <span>Cancel:</span>
+                              <span>{dayStats.cancelled}</span>
+                            </div>
                           )}
                         </div>
                       </div>

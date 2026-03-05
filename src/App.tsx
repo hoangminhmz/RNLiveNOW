@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useClinicData } from './hooks/useClinicData';
@@ -11,8 +11,7 @@ import { PatientDetailsModal } from './components/PatientDetailsModal';
 import { ImportExcelButton } from './components/ImportExcelButton';
 import { Dashboard } from './components/Dashboard';
 import { SettingsModal } from './components/SettingsModal';
-import { AIInsights } from './components/AIInsights';
-import { Plus, LayoutDashboard, Activity, X, ArrowLeft, Sparkles } from 'lucide-react';
+import { Plus, LayoutDashboard, Activity, X, ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
 import { Patient } from './types';
 
 export default function App() {
@@ -33,6 +32,7 @@ export default function App() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [expandedModule, setExpandedModule] = useState<'scheduled' | 'waiting' | 'rooms' | 'timeline' | null>(null);
   const [currentView, setCurrentView] = useState<'main' | 'dashboard'>('main');
+  const [dashboardViewMode, setDashboardViewMode] = useState<'overview' | 'calendar'>('overview');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const sensors = useSensors(
@@ -94,6 +94,7 @@ export default function App() {
     }
   };
 
+
   if (loading) {
     // ...
   }
@@ -111,7 +112,10 @@ export default function App() {
         
         <nav className="hidden md:flex items-center gap-6">
           <button 
-            onClick={() => setCurrentView('dashboard')}
+            onClick={() => {
+              setDashboardViewMode('overview');
+              setCurrentView('dashboard');
+            }}
             className={`text-sm font-semibold flex items-center gap-2 transition-colors ${currentView === 'dashboard' ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'}`}
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -129,20 +133,30 @@ export default function App() {
         {!isToday && currentView === 'main' && (
           <div className="mx-auto bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-sm font-medium border border-amber-100 flex items-center gap-2">
             Viewing history: {dayjs(selectedDate).format('MMMM D, YYYY')}
-            <button 
-              onClick={() => setSelectedDate(new Date())}
-              className="ml-2 text-xs bg-white border border-amber-200 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors"
-            >
-              Return to Today
-            </button>
+            <div className="flex gap-2 ml-2">
+              <button 
+                onClick={() => {
+                  setDashboardViewMode('calendar');
+                  setCurrentView('dashboard');
+                }}
+                className="text-xs bg-white border border-amber-200 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors flex items-center gap-1"
+              >
+                <CalendarIcon className="w-3 h-3" />
+                Back to Calendar
+              </button>
+              <button 
+                onClick={() => setSelectedDate(new Date())}
+                className="text-xs bg-white border border-amber-200 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors"
+              >
+                Return to Today
+              </button>
+            </div>
           </div>
         )}
 
         <div className="ml-auto flex items-center gap-4">
           {currentView === 'main' && isToday && (
             <>
-              <AIInsights patients={patients} rooms={rooms} />
-              <div className="w-px h-8 bg-slate-200 mx-2" />
               <ImportExcelButton onImport={(data) => importPatients(data)} />
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -164,6 +178,7 @@ export default function App() {
             rooms={rooms} 
             onOpenSettings={() => setIsSettingsOpen(true)} 
             onDateSelect={handleDateSelect}
+            initialViewMode={dashboardViewMode}
           />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
