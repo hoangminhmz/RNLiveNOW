@@ -40,10 +40,15 @@ app.use(express.json());
 
 // API Routes
 app.get("/api/rooms", async (req, res) => {
-  const rooms = await prisma.room.findMany({
-    include: { patients: { where: { status: "in_room" } } },
-  });
-  res.json(rooms);
+  try {
+    const rooms = await prisma.room.findMany({
+      include: { patients: { where: { status: "in_room" } } },
+    });
+    res.json(rooms);
+  } catch (error) {
+    console.error("Error fetching rooms:", error);
+    res.status(500).json({ error: "Failed to fetch rooms" });
+  }
 });
 
 app.post("/api/rooms", async (req, res) => {
@@ -259,6 +264,15 @@ async function setupVite() {
     app.use(express.static("dist"));
   }
 }
+
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ 
+    error: "Internal Server Error", 
+    message: err.message || "An unexpected error occurred" 
+  });
+});
 
 setupVite().then(() => {
   httpServer.listen(PORT, "0.0.0.0", () => {
